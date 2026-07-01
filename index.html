@@ -122,6 +122,20 @@
       gap: 0;
     }
 
+    .clue-head {
+      display: grid;
+      grid-template-columns: 44px minmax(90px, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      background: var(--decathlon-navy);
+      color: rgba(255, 255, 255, 0.86);
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .clue-head span:last-child { justify-self: end; }
+
     .clue-row {
       display: grid;
       grid-template-columns: 44px minmax(90px, 1fr) auto;
@@ -133,7 +147,7 @@
       background: #ffffff;
     }
 
-    .clue-row:nth-child(odd) { background: var(--soft-blue); }
+    .clue-row.is-alt { background: var(--soft-blue); }
     .clue-row:last-child { border-bottom: 0; }
 
     .clue-index {
@@ -182,12 +196,28 @@
 
     .answer-panel {
       display: grid;
-      gap: 12px;
+      gap: 10px;
       background: var(--decathlon-navy);
       border-radius: 10px;
-      padding: 16px;
+      padding: 14px;
       color: #fff;
       box-shadow: 0 16px 36px rgba(0, 32, 85, 0.22);
+    }
+
+    .answer-title {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      color: rgba(255, 255, 255, 0.88);
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .answer-title small {
+      color: rgba(255, 255, 255, 0.68);
+      font-size: 12px;
+      font-weight: 800;
     }
 
     .answer-row {
@@ -278,7 +308,10 @@
       .topbar { align-items: flex-start; }
       .answer-row { grid-template-columns: 1fr; }
       button { width: 100%; }
-      .rule-strip { grid-template-columns: 1fr; }
+      .rule-strip { grid-template-columns: 1fr 1fr; }
+      .rule { padding: 9px 10px; }
+      .rule small { font-size: 11px; }
+      .clue-head { grid-template-columns: 38px minmax(74px, 1fr) auto; padding: 8px 10px; gap: 8px; }
       .clue-row { grid-template-columns: 38px minmax(74px, 1fr) auto; min-height: 52px; padding: 7px 10px; gap: 8px; }
       .clue-index { width: 28px; height: 28px; font-size: 11px; }
       .hint span { min-width: 43px; height: 38px; }
@@ -304,6 +337,7 @@
     </section>
 
     <section class="answer-panel" id="answerPanel" aria-label="答案輸入">
+      <div class="answer-title"><span>輸入答案</span><small>Enter your code</small></div>
       <div class="answer-row">
         <input id="answerInput" inputmode="numeric" maxlength="3" autocomplete="off" placeholder="輸入 3 位數 / 3 digits">
         <button id="submitButton" type="button">驗證 / Check</button>
@@ -333,7 +367,6 @@
     };
 
     const STATE = {
-      num_attempts: 0,
       bool_solved: false
     };
 
@@ -344,16 +377,20 @@
     const el_message = document.getElementById("message");
 
     function renderClues() {
-      el_clueGrid.innerHTML = CONFIG.list_clues.map((obj_clue, num_index) => {
+      const str_rows = CONFIG.list_clues.map((obj_clue, num_index) => {
         const [str_a, str_b] = obj_clue.str_hint.split(" ");
         return `
-          <div class="clue-row">
+          <div class="clue-row ${num_index % 2 === 0 ? "is-alt" : ""}">
             <span class="clue-index">${String(num_index + 1).padStart(2, "0")}</span>
             <span class="guess">${obj_clue.str_guess}</span>
             <span class="hint"><span>${str_a}</span><span>${str_b}</span></span>
           </div>
         `;
       }).join("");
+      el_clueGrid.innerHTML = `
+        <div class="clue-head"><span>No.</span><span>Guess</span><span>Result</span></div>
+        ${str_rows}
+      `;
     }
 
     function validateAnswer(str_value) {
@@ -401,7 +438,6 @@
           return;
         }
 
-        STATE.num_attempts += 1;
         if (str_value === CONFIG.str_answer) {
           STATE.bool_solved = true;
           showMessage("correct", `答對了，密碼是 ${CONFIG.str_answer}。Correct. The code is ${CONFIG.str_answer}.`);
@@ -410,7 +446,8 @@
           return;
         }
 
-        showMessage("error", `還不是答案；這次結果是 ${getHint(str_value)}。Not the answer yet; this result is ${getHint(str_value)}. Attempt ${STATE.num_attempts}.`);
+        const str_hint = getHint(str_value);
+        showMessage("error", `還不是答案；這次結果是 ${str_hint}。Not the answer yet; result: ${str_hint}.`);
         shakePanel();
       } catch (error) {
         showMessage("error", "發生錯誤，請重新整理頁面。Something went wrong. Refresh the page.");
